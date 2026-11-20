@@ -1,3 +1,6 @@
-public class ExcessoJornadaException extends Exception{
-    
+public class ExcessoJornadaException extends Exception {
+
+    public ExcessoJornadaException(String mensagem) {
+        super(mensagem);
+    }
 }
