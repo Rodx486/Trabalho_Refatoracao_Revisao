@@ -1,80 +1,123 @@
-import java.util.ArrayList;
-import java.util.List;
-
 public class Main {
 
     public static void main(String[] args) {
-        // 1. Instanciando faturas e os 4 tipos de funcionários
-        Fatura fatura = new Fatura("FAT-001", "Teclado Mecânico", 3, 250.0f);
+        FolhaServico servico = new FolhaServico();
 
-        Assalariado assalariado = new Assalariado(
+        // =====================================================================
+        // CENÁRIO 1: CAMINHO FELIZ (pagamentos válidos dentro do limite legal)
+        // =====================================================================
+        System.out.println("============================================================");
+        System.out.println("CENÁRIO 1: CAMINHO FELIZ");
+        System.out.println("============================================================");
+
+        Fatura fatura1 = new Fatura("FAT-001", "Teclado Mecânico", 3, 250.0f);
+        Assalariado assalariado1 = new Assalariado(
                 "Ana Silva", "Rua A, 100", 111111, 101, 1500.0f);
 
         Horista horistaRegular = new Horista(
                 "Carlos Souza", "Rua B, 200", 222222, 102, 50.0f);
+        horistaRegular.registrarHorasDia("16/11", 9.0f);
+        horistaRegular.registrarHorasDia("17/11", 9.0f);
+        horistaRegular.registrarHorasDia("18/11", 9.0f);
+        horistaRegular.registrarHorasDia("19/11", 9.0f);
+        horistaRegular.registrarHorasDia("20/11", 9.0f); // 45h/semana, máx 9h/dia (dentro da lei)
 
-        Horista horistaExcesso = new Horista(
-                "Bruno Lima", "Rua C, 300", 333333, 103, 40.0f);
-
-        Comissionado comissionado = new Comissionado(
+        Comissionado comissionado1 = new Comissionado(
                 "Mariana Costa", "Rua D, 400", 444444, 104, 10000.0f, 10.0f);
-
-        AssalariadoComissionado assalariadoComissionado = new AssalariadoComissionado(
+        AssalariadoComissionado assalariadoCom1 = new AssalariadoComissionado(
                 "Pedro Rocha", "Rua E, 500", 555555, 105, 8000.0f, 5.0f, 1000.0f);
 
-        // 2. Registrando horas diárias (tratando exceção checked > 10h/dia)
-        System.out.println("=== REGISTRO DE JORNADA DIÁRIA ===");
+        Pagamento[] loteFeliz = {
+                fatura1, assalariado1, horistaRegular, comissionado1, assalariadoCom1
+        };
 
-        // Carlos: 5 dias de 9h = 45h na semana (1h extra/dia -> dentro da lei)
-        for (int dia = 1; dia <= 5; dia++) {
-            registrarJornada(horistaRegular, 9.0f);
-        }
-
-        // Bruno: 4 dias de 8h + 1 dia de 12h = 44h na semana (4h extras no 5º dia -> viola lei)
-        for (int dia = 1; dia <= 4; dia++) {
-            registrarJornada(horistaExcesso, 8.0f);
-        }
-        registrarJornada(horistaExcesso, 12.0f);
-
-        // 3. Processamento polimórfico da folha de pagamentos e contas a pagar
-        List<Pagamento> pagamentos = new ArrayList<>();
-        pagamentos.add(fatura);
-        pagamentos.add(assalariado);
-        pagamentos.add(horistaRegular);
-        pagamentos.add(horistaExcesso);
-        pagamentos.add(comissionado);
-        pagamentos.add(assalariadoComissionado);
-
-        System.out.println("\n=== FOLHA DE PAGAMENTO E CONTAS A PAGAR (POLIMÓRFICA) ===");
-        float totalGeral = 0;
-
-        for (Pagamento item : pagamentos) {
-            float valor = item.calcularPagamento();
-            totalGeral += valor;
-
-            String marcacao = "";
-            if (item instanceof Funcionario) {
-                Funcionario f = (Funcionario) item;
-                if (f.isAlertaHoraExtra()) {
-                    marcacao = "  [!] MARCAÇÃO NA FOLHA: > 2h extras diárias (risco trabalhista)";
-                }
-            }
-
-            System.out.printf("[%s] %s -> R$ %.2f%s%n",
-                    item.getClass().getSimpleName(),
-                    item,
-                    valor,
-                    marcacao);
-        }
-
-        System.out.printf("%nTOTAL GERAL A PAGAR: R$ %.2f%n", totalGeral);
-    }
-
-    private static void registrarJornada(Funcionario funcionario, float horas) {
         try {
-            funcionario.registrarHorasDias(horas);
-        } catch (ExcessoJornadaException e) {
-            System.out.println("Exceção capturada: " + e.getMessage());
+            servico.processarLote(loteFeliz);
+            System.out.println("[MAIN] Lote 1 processado com sucesso!");
+        } catch (FalhaProcessamentoFolhaException e) {
+            System.out.println("[MAIN] Erro inesperado: " + e.getMessage());
+            e.printStackTrace(System.out);
+        }
+
+        // =====================================================================
+        // CENÁRIO 2: VIOLAÇÃO TRABALHISTA (Checked - Horista com 12h no dia)
+        // =====================================================================
+        System.out.println("\n============================================================");
+        System.out.println("CENÁRIO 2: VIOLAÇÃO TRABALHISTA (CHECKED EXCEPTION)");
+        System.out.println("============================================================");
+
+        Horista horistaViolacao = new Horista(
+                "Bruno Lima", "Rua C, 300", 333333, 103, 40.0f);
+        horistaViolacao.registrarHorasDia("16/11", 8.0f);
+        horistaViolacao.registrarHorasDia("17/11", 8.0f);
+        horistaViolacao.registrarHorasDia("18/11", 12.0f); // > 10h -> dispara ExcessoJornadaException
+
+        Pagamento[] loteViolacao = { horistaViolacao };
+
+        try {
+            servico.processarLote(loteViolacao);
+        } catch (FalhaProcessamentoFolhaException e) {
+            System.out.println("\n[MAIN] Falha capturada na camada de visão: " + e.getMessage());
+            System.out.println("[MAIN] Causa raiz: " + e.getCause().getMessage());
+            System.out.println("[MAIN] Pilha de chamadas (stack trace):");
+            e.printStackTrace(System.out);
+        }
+
+        // =====================================================================
+        // CENÁRIO 3: FALHA EM LOTE DE 5 ITENS (4º falha -> Rollback LIFO 3->2->1)
+        // =====================================================================
+        System.out.println("\n============================================================");
+        System.out.println("CENÁRIO 3: FALHA NO 4º ITEM COM ROLLBACK EM PILHA (LIFO)");
+        System.out.println("============================================================");
+
+        Fatura item1 = new Fatura("FAT-002", "Monitor 27\"", 2, 1200.0f);
+        Assalariado item2 = new Assalariado(
+                "Fernanda Alves", "Rua F, 600", 666666, 106, 2200.0f);
+        Comissionado item3 = new Comissionado(
+                "Lucas Mendes", "Rua G, 700", 777777, 107, 15000.0f, 8.0f);
+
+        Horista item4ComFalha = new Horista(
+                "Rafael Dias", "Rua H, 800", 888888, 108, 45.0f);
+        item4ComFalha.registrarHorasDia("19/11", 12.0f); // 4º item gera falha trabalhista!
+
+        Assalariado item5 = new Assalariado(
+                "Julia Martins", "Rua I, 900", 999999, 109, 1800.0f);
+
+        Pagamento[] loteRollback = { item1, item2, item3, item4ComFalha, item5 };
+
+        try {
+            servico.processarLote(loteRollback);
+        } catch (FalhaProcessamentoFolhaException e) {
+            System.out.println("\n[MAIN] Lote abortado e revertido: " + e.getMessage());
+            System.out.println("[MAIN] Causa raiz: " + e.getCause().getMessage());
+        }
+
+        // =====================================================================
+        // TESTE EXTRA: VALIDAÇÃO DE DOMÍNIO (Unchecked - DadosInvalidosException)
+        // =====================================================================
+        System.out.println("\n============================================================");
+        System.out.println("TESTE EXTRA: DADOS INVÁLIDOS (UNCHECKED EXCEPTION)");
+        System.out.println("============================================================");
+
+        try {
+            new Fatura("FAT-ERR", "Mouse com quantidade inválida", 0, 100.0f);
+        } catch (DadosInvalidosException e) {
+            System.out.println("[MAIN] DadosInvalidosException capturada: " + e.getMessage());
+        }
+
+        // =====================================================================
+        // ESTADO FINAL DO SISTEMA — RELATÓRIO DE AUDITORIA TRABALHISTA
+        // =====================================================================
+        System.out.println("\n============================================================");
+        System.out.println("ESTADO FINAL — RELATÓRIO DE AUDITORIA TRABALHISTA");
+        System.out.println("============================================================");
+
+        if (servico.getAuditoriaTrabalhista().isEmpty()) {
+            System.out.println("Nenhuma pendência trabalhista registrada.");
+        } else {
+            for (String pendencia : servico.getAuditoriaTrabalhista()) {
+                System.out.println("- " + pendencia);
+            }
         }
     }
 }

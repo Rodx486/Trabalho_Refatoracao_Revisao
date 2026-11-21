@@ -8,8 +8,8 @@ public class Fatura implements Pagamento {
     public Fatura(String codigo, String descricao, int quantidade, float precoUnitario) {
         this.codigo = codigo;
         this.descricao = descricao;
-        this.quantidade = quantidade;
-        this.precoUnitario = precoUnitario;
+        setQuantidade(quantidade);
+        setPrecoUnitario(precoUnitario);
     }
 
     public String getCodigo() {
@@ -24,20 +24,27 @@ public class Fatura implements Pagamento {
         return quantidade;
     }
 
-    public void setQuantidade(int quantidade) {
-        this.quantidade = quantidade;
-    }
-
     public float getPrecoUnitario() {
         return precoUnitario;
     }
 
+    public void setQuantidade(int quantidade) {
+        if (quantidade <= 0) {
+            throw new DadosInvalidosException("Alerta: Quantida não pode ser menor ou igual a zero! ");
+        }
+        this.quantidade = quantidade;
+    }
+
     public void setPrecoUnitario(float precoUnitario) {
+        if(precoUnitario < 0) {
+            throw new DadosInvalidosException("Alerta: Preço Unitario não pode ser menor do que zero!");
+        }
         this.precoUnitario = precoUnitario;
     }
 
     @Override
     public float calcularPagamento() {
+
         return quantidade * precoUnitario;
     }
 

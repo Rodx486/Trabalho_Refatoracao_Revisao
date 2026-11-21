@@ -4,8 +4,15 @@ public class Assalariado extends Funcionario {
 
     public Assalariado(String nome, String endereco, int cpf, int matricula, float salarioSemanal) {
         super(nome, endereco, cpf, matricula);
-        this.salarioSemanal = salarioSemanal;
+        setSalarioSemanal(salarioSemanal);
 
+    }
+
+    public void setSalarioSemanal(float salarioSemanal) {
+        if (salarioSemanal < 0) {
+            throw new DadosInvalidosException("Salário semanal não pode ser negativo.");
+        }
+        this.salarioSemanal = salarioSemanal;
     }
 
     @Override
